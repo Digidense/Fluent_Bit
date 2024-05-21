@@ -1,0 +1,41 @@
+name: Deploy to Kubernetes
+
+on:
+  push:
+    branches:
+      - main  # Deploy on push to main branch
+  pull_request:
+    branches:
+      - main  # Deploy on pull requests to main branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up kubectl
+      uses: azure/setup-kubectl@v1
+      with:
+        version: 'v1.20.0'  # Specify the version of kubectl you need
+
+    - name: Authenticate with K8s Cluster
+      env:
+        KUBECONFIG: ${{ secrets.KUBECONFIG }}
+      run: |
+        echo "${{ secrets.KUBECONFIG }}" > $KUBECONFIG
+        kubectl config set-cluster your-cluster --server=https://your-cluster-api-server
+        kubectl config set-credentials your-credentials --token=$KUBE_TOKEN
+        kubectl config set-context your-context --cluster=your-cluster --user=your-credentials
+        kubectl config use-context your-context
+
+    - name: Apply Kubernetes manifests
+      run: |
+        kubectl apply -f k8s/namespace.yaml
+        kubectl apply -f k8s/serviceaccount.yaml
+        kubectl apply -f k8s/clusterrole.yaml
+        kubectl apply -f k8s/clusterrolebinding.yaml
+        kubectl apply -f k8s/configmap.yaml
+        kubectl apply -f k8s/daemonset.yaml
