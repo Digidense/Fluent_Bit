@@ -30,9 +30,9 @@ jobs:
 
     - name: Authenticate with K8s Cluster
       env:
+        KUBECONFIG: ${{ github.workspace }}/.kube/config
         KUBE_TOKEN: ${{ secrets.KUBE_TOKEN }}
       run: |
-        KUBECONFIG=${{ github.workspace }}/.kube/config
         mkdir -p $(dirname $KUBECONFIG)
         echo "" > $KUBECONFIG
         kubectl config set-cluster Flash_Cluster_EKS --server=https://AFE6FF63BAAB6A88D7ADDFDE688488DD.gr7.us-east-1.eks.amazonaws.com
