@@ -37,7 +37,7 @@ jobs:
         mkdir -p $(dirname $KUBECONFIG)
         echo "" > $KUBECONFIG
         kubectl config set-cluster Flash_Cluster_EKS --server=https://AFE6FF63BAAB6A88D7ADDFDE688488DD.gr7.us-east-1.eks.amazonaws.com
-        kubectl config set-credentials Flash_Cluster_EKS-credentials token=${{ secrets.KUBE_TOKEN }}
+        kubectl config set-credentials Flash_Cluster_EKS-credentials --token=${{ secrets.KUBE_TOKEN }}
         kubectl config use-context Flash_Cluster_EKS-context
 
     - name: Apply Kubernetes manifests
