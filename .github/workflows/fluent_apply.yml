@@ -43,9 +43,5 @@ jobs:
 
     - name: Apply Kubernetes manifests
       run: |
-        kubectl apply -f namespace.yaml
-        kubectl apply -f serviceaccount.yaml
-        kubectl apply -f k8s/clusterrole.yaml
-        kubectl apply -f k8s/clusterrolebinding.yaml
-        kubectl apply -f k8s/configmap.yaml
-        kubectl apply -f k8s/daemonset.yaml
+        kubectl apply -f Fluent_bit.yaml
+        
