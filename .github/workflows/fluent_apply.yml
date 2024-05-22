@@ -16,6 +16,13 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+
     - name: Set up kubectl
       uses: azure/setup-kubectl@v1
       with:
@@ -24,12 +31,13 @@ jobs:
     - name: Authenticate with K8s Cluster
       env:
         KUBECONFIG: ${{ secrets.KUBECONFIG }}
+        KUBE_TOKEN: ${{ secrets.KUBE_TOKEN }}
       run: |
         echo "${{ secrets.KUBECONFIG }}" > $KUBECONFIG
-        kubectl config set-cluster your-cluster --server=https://your-cluster-api-server
-        kubectl config set-credentials your-credentials --token=$KUBE_TOKEN
-        kubectl config set-context your-context --cluster=your-cluster --user=your-credentials
-        kubectl config use-context your-context
+        kubectl config set-cluster Flash_Cluster_EKS --server=https://AFE6FF63BAAB6A88D7ADDFDE688488DD.gr7.us-east-1.eks.amazonaws.com
+        kubectl config set-credentials Flash_Cluster_EKS-credentials --token=$KUBE_TOKEN
+        kubectl config set-context Flash_Cluster_EKS-context --cluster=Flash_Cluster_EKS --user=Flash_Cluster_EKS-credentials
+        kubectl config use-context Flash_Cluster_EKS-context
 
     - name: Apply Kubernetes manifests
       run: |
