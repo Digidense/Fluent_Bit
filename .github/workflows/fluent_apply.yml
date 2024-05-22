@@ -23,10 +23,11 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1
 
-    - name: Set up kubectl
-      uses: azure/setup-kubectl@v1
-      with:
-        version: 'v1.20.0'  # Specify the version of kubectl you need
+    - name: Install kubectl
+      run: |
+        curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+        chmod +x ./kubectl
+        sudo mv ./kubectl /usr/local/bin/kubectl
 
     - name: Authenticate with K8s Cluster
       env:
@@ -36,7 +37,7 @@ jobs:
         mkdir -p $(dirname $KUBECONFIG)
         echo "" > $KUBECONFIG
         kubectl config set-cluster Flash_Cluster_EKS --server=https://AFE6FF63BAAB6A88D7ADDFDE688488DD.gr7.us-east-1.eks.amazonaws.com
-        kubectl config set-credentials Flash_Cluster_EKS-credentials --token=$KUBE_TOKEN
+        kubectl config set-credentials Flash_Cluster_EKS-credentials --token=${{ secrets.KUBE_TOKEN }}
         kubectl config set-context Flash_Cluster_EKS-context --cluster=Flash_Cluster_EKS --user=Flash_Cluster_EKS-credentials
         kubectl config use-context Flash_Cluster_EKS-context
 
