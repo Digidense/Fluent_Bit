@@ -43,6 +43,6 @@ jobs:
 
     - name: Apply Kubernetes manifests
       run: |
-       kubectl apply -f namespace.yaml --validate=false
+       kubectl apply -f namespace.yaml
 
         
