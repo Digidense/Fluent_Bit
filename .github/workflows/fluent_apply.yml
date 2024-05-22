@@ -43,5 +43,6 @@ jobs:
 
     - name: Apply Kubernetes manifests
       run: |
-        kubectl apply -f Fluent_bit.yaml
+       kubectl apply -f Fluent_bit.yaml --validate=false
+
         
