@@ -29,20 +29,17 @@ jobs:
         chmod +x ./kubectl
         sudo mv ./kubectl /usr/local/bin/kubectl
 
-    - name: Authenticate with K8s Cluster
+    - name: Install aws-iam-authenticator
+      run: |
+        curl -o aws-iam-authenticator https://amazon-eks.s3.us-west-2.amazonaws.com/1.18.9/2020-11-02/bin/linux/amd64/aws-iam-authenticator
+        chmod +x ./aws-iam-authenticator
+        sudo mv ./aws-iam-authenticator /usr/local/bin/aws-iam-authenticator
+
+    - name: Update kubeconfig
       env:
         KUBECONFIG: ${{ github.workspace }}/.kube/config
       run: |
-        mkdir -p $(dirname $KUBECONFIG)
-        echo "" > $KUBECONFIG
-        kubectl config set-cluster Flash_Cluster_EKS \
-          --server=https://AFE6FF63BAAB6A88D7ADDFDE688488DD.gr7.us-east-1.eks.amazonaws.com \
-          --insecure-skip-tls-verify=true
-        kubectl config set-credentials Flash_Cluster_EKS-credentials --token=k8s-aws-v1.aHR0cHM6Ly9zdHMudXMtZWFzdC0xLmFtYXpvbmF3cy5jb20vP0FjdGlvbj1HZXRDYWxsZXJJZGVudGl0eSZWZXJzaW9uPTIwMTEtMDYtMTUmWC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVTZHRFVMTlVYUzY0UVVGNCUyRjIwMjQwNTIyJTJGdXMtZWFzdC0xJTJGc3RzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA1MjJUMDUyNzM0WiZYLUFtei1FeHBpcmVzPTYwJlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCUzQngtazhzLWF3cy1pZCZYLUFtei1TaWduYXR1cmU9MjIwMTUxOWUwZjY3Njc2NGM2YjUwMzAxYWRiNDBmMjFlNGVmODNiZmI0ZDJiYjk1YjM1YzU2NWYzZjlhMWY0Yw
-        kubectl config set-context Flash_Cluster_EKS-context \
-          --cluster=Flash_Cluster_EKS \
-          --user=Flash_Cluster_EKS-credentials
-        kubectl config use-context Flash_Cluster_EKS-context
+        aws eks update-kubeconfig --name Flash_Cluster_EKS --region us-east-1
 
     - name: Apply Kubernetes manifests
       run: |
