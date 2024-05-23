@@ -39,7 +39,13 @@ jobs:
       env:
         KUBECONFIG: ${{ github.workspace }}/.kube/config
       run: |
-        aws eks update-kubeconfig --name Flash_Cluster_EKS --region us-east-1
+        mkdir -p $(dirname $KUBECONFIG)
+        touch $KUBECONFIG
+        aws eks update-kubeconfig --name Flash_Cluster_EKS --region us-east-1 --kubeconfig $KUBECONFIG
+
+    - name: Validate kubeconfig
+      run: |
+        kubectl get nodes
 
     - name: Apply Kubernetes manifests
       run: |
