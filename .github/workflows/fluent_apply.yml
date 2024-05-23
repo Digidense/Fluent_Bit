@@ -3,10 +3,10 @@ name: Deploy to Kubernetes
 on:
   push:
     branches:
-      - main  # Deploy on push to main branch
+      - main
   pull_request:
     branches:
-      - main  # Deploy on pull requests to main branch
+      - main
 
 jobs:
   deploy:
@@ -42,11 +42,18 @@ jobs:
         mkdir -p $(dirname $KUBECONFIG)
         touch $KUBECONFIG
         aws eks update-kubeconfig --name Flash_Cluster_EKS --region us-east-1 --kubeconfig $KUBECONFIG
+        echo "Kubeconfig contents:"
+        cat $KUBECONFIG
 
     - name: Validate kubeconfig
+      env:
+        KUBECONFIG: ${{ github.workspace }}/.kube/config
       run: |
+        kubectl config view
         kubectl get nodes
 
     - name: Apply Kubernetes manifests
+      env:
+        KUBECONFIG: ${{ github.workspace }}/.kube/config
       run: |
         kubectl apply -f Fluent_bit.yaml --validate=false
