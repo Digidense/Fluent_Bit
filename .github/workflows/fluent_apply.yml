@@ -56,4 +56,4 @@ jobs:
       env:
         KUBECONFIG: ${{ github.workspace }}/.kube/config
       run: |
-        kubectl apply -f Fluent_bit.yaml --validate=false
+        kubectl apply -f Fluent_bit.yaml 
