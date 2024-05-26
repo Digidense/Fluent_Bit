@@ -1,4 +1,4 @@
-name: cicd
+name: Deploy to Kubernetes
 
 on:
   push:
@@ -34,7 +34,7 @@ jobs:
 
     - name: Apply Kubernetes manifests
       run: |
-        kubectl apply -f https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/daemonset/container-insights-monitoring/cloudwatch-namespace.yaml
+        kubectl apply -f https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/daemonset/container-insights-monitoring/cloudwatch-namespace.yaml --validate=false
 
         ClusterName=cluster-name
         RegionName=cluster-region
