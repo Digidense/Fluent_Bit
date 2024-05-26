@@ -1,10 +1,7 @@
-name: Deploy to Kubernetes
+name: cicd
 
 on:
   push:
-    branches:
-      - main
-  pull_request:
     branches:
       - main
 
@@ -35,26 +32,10 @@ jobs:
         chmod +x ./aws-iam-authenticator
         sudo mv ./aws-iam-authenticator /usr/local/bin/aws-iam-authenticator
 
-    - name: Create empty kubeconfig file
-      run: |
-        mkdir -p /home/runner/work/Fluent_Bit/Fluent_Bit/.kube
-        touch /home/runner/work/Fluent_Bit/Fluent_Bit/.kube/config
-    - name: Validate kubeconfig
-      run: |
-        kubectl config view
-        kubectl get nodes
-
     - name: Apply Kubernetes manifests
       run: |
-        kubectl apply -f Fluent_bit.yaml
+        kubectl apply -f https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/daemonset/container-insights-monitoring/cloudwatch-namespace.yaml
 
-    - name: Decode kubeconfig data
-      run: |
-        echo "${{ secrets.KUBECONFIG_ENCODED }}" | base64 --decode > /home/runner/work/Fluent_Bit/Fluent_Bit/.kube/config
-        export KUBECONFIG=/home/runner/work/Fluent_Bit/Fluent_Bit/.kube/config
-
-    - name: Configure Fluent Bit
-      run: |
         ClusterName=cluster-name
         RegionName=cluster-region
         FluentBitHttpPort='2020'
@@ -68,13 +49,11 @@ jobs:
           --from-literal=read.head=${FluentBitReadFromHead} \
           --from-literal=read.tail=${FluentBitReadFromTail} \
           --from-literal=logs.region=${RegionName} -n amazon-cloudwatch
+
+        kubectl apply -f https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/daemonset/container-insights-monitoring/fluent-bit/fluent-bit.yaml
+
         kubectl apply -f https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/daemonset/container-insights-monitoring/fluent-bit/fluent-bit-compatible.yaml
 
-    - name: Validate kubeconfig
+    - name: Check pods status
       run: |
-        kubectl config view
-        kubectl get nodes
-
-    - name: Apply Kubernetes manifests
-      run: |
-        kubectl apply -f Fluent_bit.yaml
+        kubectl get pods -n amazon-cloudwatch
