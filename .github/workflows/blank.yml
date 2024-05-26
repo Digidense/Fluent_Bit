@@ -1,4 +1,4 @@
-name: Kubernetes
+name: Deploy to Kubernetes
 
 on:
   push:
@@ -35,16 +35,23 @@ jobs:
         chmod +x ./aws-iam-authenticator
         sudo mv ./aws-iam-authenticator /usr/local/bin/aws-iam-authenticator
 
-    - name: Update kubeconfig
+    - name: Decode and configure kubeconfig
+      run: |
+        echo "${{ secrets.KUBECONFIG_B64 }}" | base64 --decode > ${{ github.workspace }}/.kube/config
+        export KUBECONFIG=${{ github.workspace }}/.kube/config
+
+    - name: Validate kubeconfig
       env:
         KUBECONFIG: ${{ github.workspace }}/.kube/config
       run: |
-        mkdir -p $(dirname $KUBECONFIG)
-        touch $KUBECONFIG
-        aws eks update-kubeconfig --name Clear_Cluster --region us-east-1 --kubeconfig $KUBECONFIG
-        echo "Kubeconfig contents:"
-        cat $KUBECONFIG
+        kubectl config view
+        kubectl get nodes
 
+    - name: Apply Kubernetes manifests
+      env:
+        KUBECONFIG: ${{ github.workspace }}/.kube/config
+      run: |
+        kubectl apply -f Fluent_bit.yaml
 
     - name: Configure Fluent Bit
       env:
@@ -65,16 +72,3 @@ jobs:
           --from-literal=logs.region=${RegionName} -n amazon-cloudwatch
 
         kubectl apply -f https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/daemonset/container-insights-monitoring/fluent-bit/fluent-bit-compatible.yaml
-
-    - name: Validate kubeconfig
-      env:
-        KUBECONFIG: ${{ github.workspace }}/.kube/config
-      run: |
-        kubectl config view
-        kubectl get nodes
-
-    - name: Apply Kubernetes manifests
-      env:
-        KUBECONFIG: ${{ github.workspace }}/.kube/config
-      run: |
-        kubectl apply -f Fluent_bit.yaml
