@@ -35,33 +35,31 @@ jobs:
         chmod +x ./aws-iam-authenticator
         sudo mv ./aws-iam-authenticator /usr/local/bin/aws-iam-authenticator
 
-    - name: Decode and configure kubeconfig
+    - name: Create empty kubeconfig file
       run: |
-        echo "${{ secrets.KUBECONFIG_B64 }}" | base64 --decode > ${{ github.workspace }}/.kube/config
-        export KUBECONFIG=${{ github.workspace }}/.kube/config
-
+        mkdir -p /home/runner/work/Fluent_Bit/Fluent_Bit/.kube
+        touch /home/runner/work/Fluent_Bit/Fluent_Bit/.kube/config
     - name: Validate kubeconfig
-      env:
-        KUBECONFIG: ${{ github.workspace }}/.kube/config
       run: |
         kubectl config view
         kubectl get nodes
 
     - name: Apply Kubernetes manifests
-      env:
-        KUBECONFIG: ${{ github.workspace }}/.kube/config
       run: |
         kubectl apply -f Fluent_bit.yaml
 
+    - name: Decode kubeconfig data
+      run: |
+        echo "${{ secrets.KUBECONFIG_ENCODED }}" | base64 --decode > /home/runner/work/Fluent_Bit/Fluent_Bit/.kube/config
+        export KUBECONFIG=/home/runner/work/Fluent_Bit/Fluent_Bit/.kube/config
+
     - name: Configure Fluent Bit
-      env:
-        KUBECONFIG: ${{ github.workspace }}/.kube/config
       run: |
         ClusterName=cluster-name
         RegionName=cluster-region
         FluentBitHttpPort='2020'
         FluentBitReadFromHead='Off'
-        [[ ${FluentBitReadFromHead} = 'On' ]] && FluentBitReadFromTail='Off'|| FluentBitReadFromTail='On'
+        [[ ${FluentBitReadFromHead} = 'On' ]] && FluentBitReadFromTail='Off' || FluentBitReadFromTail='On'
         [[ -z ${FluentBitHttpPort} ]] && FluentBitHttpServer='Off' || FluentBitHttpServer='On'
         kubectl create configmap fluent-bit-cluster-info \
           --from-literal=cluster.name=${ClusterName} \
@@ -70,5 +68,13 @@ jobs:
           --from-literal=read.head=${FluentBitReadFromHead} \
           --from-literal=read.tail=${FluentBitReadFromTail} \
           --from-literal=logs.region=${RegionName} -n amazon-cloudwatch
-
         kubectl apply -f https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/daemonset/container-insights-monitoring/fluent-bit/fluent-bit-compatible.yaml
+
+    - name: Validate kubeconfig
+      run: |
+        kubectl config view
+        kubectl get nodes
+
+    - name: Apply Kubernetes manifests
+      run: |
+        kubectl apply -f Fluent_bit.yaml
