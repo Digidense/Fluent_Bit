@@ -1,0 +1,90 @@
+name: Deploy Fluent Bit
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Install kubectl
+        run: |
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x ./kubectl
+          sudo mv ./kubectl /usr/local/bin/kubectl
+      - name: Install aws-iam-authenticator
+        run: |
+          curl -o aws-iam-authenticator https://amazon-eks.s3.us-west-2.amazonaws.com/1.18.9/2020-11-02/bin/linux/amd64/aws-iam-authenticator
+          chmod +x ./aws-iam-authenticator
+          sudo mv ./aws-iam-authenticator /usr/local/bin/aws-iam-authenticator
+      - name: Update kubeconfig
+        env:
+          KUBECONFIG: ${{ github.workspace }}/.kube/config
+        run: |
+          mkdir -p $(dirname $KUBECONFIG)
+          touch $KUBECONFIG
+          aws eks update-kubeconfig --name Clear_Cluster_EKS --region us-east-1 --kubeconfig $KUBECONFIG
+          echo "Kubeconfig contents:"
+          cat $KUBECONFIG
+      - name: Validate kubeconfig
+        env:
+          KUBECONFIG: ${{ github.workspace }}/.kube/config
+        run: |
+          kubectl config view
+          kubectl get nodes
+      - name: Apply namespace YAML
+        env:
+          KUBECONFIG: ${{ github.workspace }}/.kube/config
+        run: kubectl apply -f namespace.yaml
+
+      - name: Set environment variables and create ConfigMap
+        env:
+          KUBECONFIG: ${{ github.workspace }}/.kube/config
+        run: |
+          ClusterName=Clear_Cluster_EKS
+          RegionName=us-east-1
+          FluentBitHttpPort='2020'
+          FluentBitReadFromHead='Off'
+          [[ ${FluentBitReadFromHead} = 'On' ]] && FluentBitReadFromTail='Off' || FluentBitReadFromTail='On'
+          [[ -z ${FluentBitHttpPort} ]] && FluentBitHttpServer='Off' || FluentBitHttpServer='On'
+          kubectl create configmap fluent-bit-cluster-info \
+            --from-literal=cluster.name=${ClusterName} \
+            --from-literal=http.server=${FluentBitHttpServer} \
+            --from-literal=http.port=${FluentBitHttpPort} \
+            --from-literal=read.head=${FluentBitReadFromHead} \
+            --from-literal=read.tail=${FluentBitReadFromTail} \
+            --from-literal=logs.region=${RegionName} -n amazon-cloudwatch
+      - name: Apply Fluent Bit YAML
+        env:
+          KUBECONFIG: ${{ github.workspace }}/.kube/config
+        run: kubectl apply -f fluentbit.yaml
+
+      - name: Apply Fluent Bit YAML without validation if previous step fails
+        if: failure()
+        env:
+          KUBECONFIG: ${{ github.workspace }}/.kube/config
+        run: kubectl apply -f fluentbit.yaml --validate=false
+
+      - name: Apply Fluent Bit compatible YAML
+        env:
+          KUBECONFIG: ${{ github.workspace }}/.kube/config
+        run: kubectl apply -f https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/daemonset/container-insights-monitoring/fluent-bit/fluent-bit-compatible.yaml
+
+      - name: Verify deployment
+        env:
+          KUBECONFIG: ${{ github.workspace }}/.kube/config
+        run: kubectl get pods -n amazon-cloudwatch
