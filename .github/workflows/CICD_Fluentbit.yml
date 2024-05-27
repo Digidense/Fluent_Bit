@@ -50,12 +50,24 @@ jobs:
           kubectl config view
           kubectl get nodes
 
-      - name: Debug - Check API server accessibility
+      - name: Set environment variables and create ConfigMap
         env:
           KUBECONFIG: ${{ github.workspace }}/.kube/config
         run: |
-          kubectl cluster-info
-          kubectl get pods --all-namespaces
+          ClusterName=Clear_Cluster
+          RegionName=us-east-1
+          FluentBitHttpPort='2020'
+          FluentBitReadFromHead='Off'
+          [[ ${FluentBitReadFromHead} = 'On' ]] && FluentBitReadFromTail='Off' || FluentBitReadFromTail='On'
+          [[ -z ${FluentBitHttpPort} ]] && FluentBitHttpServer='Off' || FluentBitHttpServer='On'
+
+          kubectl create configmap fluent-bit-cluster-info \
+            --from-literal=cluster.name=${ClusterName} \
+            --from-literal=http.server=${FluentBitHttpServer} \
+            --from-literal=http.port=${FluentBitHttpPort} \
+            --from-literal=read.head=${FluentBitReadFromHead} \
+            --from-literal=read.tail=${FluentBitReadFromTail} \
+            --from-literal=logs.region=${RegionName} -n amazon-cloudwatch
 
       - name: Apply Fluent Bit YAML with validation
         env:
@@ -67,22 +79,6 @@ jobs:
         env:
           KUBECONFIG: ${{ github.workspace }}/.kube/config
         run: kubectl apply -f Fluent_bit.yaml --validate=false
-
-      - name: Set environment variables
-        run: |
-          ClusterName=Clear_Cluster
-          RegionName=us-east-1
-          FluentBitHttpPort='2020'
-          FluentBitReadFromHead='Off'
-          [[ ${FluentBitReadFromHead} = 'On' ]] && FluentBitReadFromTail='Off' || FluentBitReadFromTail='On'
-          [[ -z ${FluentBitHttpPort} ]] && FluentBitHttpServer='Off' || FluentBitHttpServer='On'
-          kubectl create configmap fluent-bit-cluster-info \
-          --from-literal=cluster.name=${ClusterName} \
-          --from-literal=http.server=${FluentBitHttpServer} \
-          --from-literal=http.port=${FluentBitHttpPort} \
-          --from-literal=read.head=${FluentBitReadFromHead} \
-          --from-literal=read.tail=${FluentBitReadFromTail} \
-          --from-literal=logs.region=${RegionName} -n amazon-cloudwatch
 
       - name: Apply Fluent Bit compatible YAML
         env:
