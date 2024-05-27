@@ -52,9 +52,12 @@ jobs:
     - name: Apply Kubernetes manifests
       env:
         KUBECONFIG: ${{ github.workspace }}/.kube/config
+        AWS_DEFAULT_REGION: us-east-1
+        AWS_REGION: us-east-1
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       run: |
         kubectl apply -f https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/daemonset/container-insights-monitoring/cloudwatch-namespace.yaml --validate=false
-
         ClusterName=cluster-name
         RegionName=cluster-region
         FluentBitHttpPort='2020'
@@ -69,14 +72,7 @@ jobs:
           --from-literal=read.tail=${FluentBitReadFromTail} \
           --from-literal=logs.region=${RegionName} -n amazon-cloudwatch
 
-        env:
-        AWS_DEFAULT_REGION: us-east-1
-        AWS_REGION: us-east-1
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        KUBECONFIG: /home/runner/work/Fluent_Bit/Fluent_Bit/.kube/config
         kubectl apply -f https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/daemonset/container-insights-monitoring/fluent-bit/fluent-bit.yaml
-
         kubectl apply -f https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/daemonset/container-insights-monitoring/fluent-bit/fluent-bit-compatible.yaml
 
     - name: Check pods status
