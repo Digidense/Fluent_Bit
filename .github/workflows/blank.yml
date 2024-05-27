@@ -33,25 +33,22 @@ jobs:
         sudo mv ./aws-iam-authenticator /usr/local/bin/aws-iam-authenticator
 
     - name: Configure kubeconfig
-      env:
-        KUBECONFIG: ${{ github.workspace }}/.kube/config
       run: |
-        mkdir -p $(dirname $KUBECONFIG)
-        touch $KUBECONFIG
-        aws eks update-kubeconfig --name Clear_Cluster --region us-east-1 --kubeconfig $KUBECONFIG
+        mkdir -p $HOME/.kube
+        aws eks update-kubeconfig --name Clear_Cluster --region us-east-1 --kubeconfig $HOME/.kube/config
         echo "Kubeconfig contents:"
-        cat $KUBECONFIG
+        cat $HOME/.kube/config
 
     - name: Validate kubeconfig
       env:
-        KUBECONFIG: ${{ github.workspace }}/.kube/config
+        KUBECONFIG: $HOME/.kube/config
       run: |
         kubectl config view
         kubectl get nodes
 
     - name: Apply Kubernetes manifests
       env:
-        KUBECONFIG: ${{ github.workspace }}/.kube/config
+        KUBECONFIG: $HOME/.kube/config
         AWS_DEFAULT_REGION: us-east-1
         AWS_REGION: us-east-1
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -71,10 +68,11 @@ jobs:
           --from-literal=read.head=${FluentBitReadFromHead} \
           --from-literal=read.tail=${FluentBitReadFromTail} \
           --from-literal=logs.region=${RegionName} -n amazon-cloudwatch
-
         kubectl apply -f https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/daemonset/container-insights-monitoring/fluent-bit/fluent-bit.yaml
         kubectl apply -f https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/daemonset/container-insights-monitoring/fluent-bit/fluent-bit-compatible.yaml
 
     - name: Check pods status
+      env:
+        KUBECONFIG: $HOME/.kube/config
       run: |
         kubectl get pods -n amazon-cloudwatch
