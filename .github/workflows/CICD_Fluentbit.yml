@@ -50,6 +50,13 @@ jobs:
           kubectl config view
           kubectl get nodes
 
+      - name: Debug - Check API server accessibility
+        env:
+          KUBECONFIG: ${{ github.workspace }}/.kube/config
+        run: |
+          kubectl cluster-info
+          kubectl get pods --all-namespaces
+
       - name: Apply Fluent Bit YAML with validation
         env:
           KUBECONFIG: ${{ github.workspace }}/.kube/config
@@ -69,7 +76,6 @@ jobs:
           FluentBitReadFromHead='Off'
           [[ ${FluentBitReadFromHead} = 'On' ]] && FluentBitReadFromTail='Off' || FluentBitReadFromTail='On'
           [[ -z ${FluentBitHttpPort} ]] && FluentBitHttpServer='Off' || FluentBitHttpServer='On'
-
           kubectl create configmap fluent-bit-cluster-info \
           --from-literal=cluster.name=${ClusterName} \
           --from-literal=http.server=${FluentBitHttpServer} \
