@@ -50,25 +50,7 @@ jobs:
           kubectl config view
           kubectl get nodes
 
-      - name: Debug - Check API server accessibility
-        env:
-          KUBECONFIG: ${{ github.workspace }}/.kube/config
-        run: |
-          kubectl cluster-info
-          kubectl get pods --all-namespaces
-
-      - name: Apply Fluent Bit YAML with validation
-        env:
-          KUBECONFIG: ${{ github.workspace }}/.kube/config
-        run: kubectl apply -f Fluent_bit.yaml
-
-      - name: Apply Fluent Bit YAML without validation (if needed)
-        if: failure()
-        env:
-          KUBECONFIG: ${{ github.workspace }}/.kube/config
-        run: kubectl apply -f Fluent_bit.yaml --validate=false
-
-      - name: Set environment variables
+      - name: Set environment variables and create ConfigMap
         run: |
           ClusterName=cluster-name
           RegionName=cluster-region
@@ -76,13 +58,16 @@ jobs:
           FluentBitReadFromHead='Off'
           [[ ${FluentBitReadFromHead} = 'On' ]] && FluentBitReadFromTail='Off' || FluentBitReadFromTail='On'
           [[ -z ${FluentBitHttpPort} ]] && FluentBitHttpServer='Off' || FluentBitHttpServer='On'
+
+          export KUBECONFIG=${{ github.workspace }}/.kube/config  # Set KUBECONFIG
+
           kubectl create configmap fluent-bit-cluster-info \
-          --from-literal=cluster.name=${ClusterName} \
-          --from-literal=http.server=${FluentBitHttpServer} \
-          --from-literal=http.port=${FluentBitHttpPort} \
-          --from-literal=read.head=${FluentBitReadFromHead} \
-          --from-literal=read.tail=${FluentBitReadFromTail} \
-          --from-literal=logs.region=${RegionName} -n amazon-cloudwatch
+            --from-literal=cluster.name=${ClusterName} \
+            --from-literal=http.server=${FluentBitHttpServer} \
+            --from-literal=http.port=${FluentBitHttpPort} \
+            --from-literal=read.head=${FluentBitReadFromHead} \
+            --from-literal=read.tail=${FluentBitReadFromTail} \
+            --from-literal=logs.region=${RegionName} -n amazon-cloudwatch
 
       - name: Apply Fluent Bit compatible YAML
         env:
